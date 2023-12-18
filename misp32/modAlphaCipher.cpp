@@ -1,92 +1,104 @@
 #include "modAlphaCipher.h"
-
-modAlphaCipher::modAlphaCipher(const std::string& skey)
+PerestanCipher::PerestanCipher(int key)
 {
-    for (unsigned i = 0; i < numAlpha.size(); i++)
-        alphaNum[numAlpha[i]] = i;
-    key = convert(getValidKey(skey));
+    this->k = key;
 }
-string modAlphaCipher::encrypt(const string& open_text)
+wstring PerestanCipher::CoderPerestanCipher(PerestanCipher w, wstring& s)
 {
-    std::vector <int> work = convert(getValidOpenText(open_text));
-    for (unsigned i = 0; i < work.size(); i++)
-        work[i] = (work[i] + key[i % key.size()]) % alphaNum.size();
-    return convert(work);
-}
-std::string modAlphaCipher::decrypt(const std::string& cipher_text)
-{
-    std::vector <int> work = convert(getValidCipherText(cipher_text));
-    for (unsigned i = 0; i < work.size(); i++)
-        work[i] = (work[i] + alphaNum.size() - key[i % key.size()]) % alphaNum.size();
-    return convert(work);
-}
-inline std::vector <int> modAlphaCipher::convert(const std::string& s)
-{
-    std::vector <int> result;
-    std::wstring ws = codec.from_bytes(s);
-    for (auto c : ws) {
-        result.push_back(alphaNum[c]);
+    wstring code;
+    s = getValidOpenText(s);
+    w.k = getValidKey(w.k, s);
+    int h;
+    if (s.size() % w.k != 0) {
+        h = s.size() / w.k + 1;
     }
-    return result;
-}
-
-inline std::string modAlphaCipher::convert(const std::vector<int>& v)
-{
-    std::string result;
-    std::wstring ws = codec.from_bytes(result);
-    for (auto i : v) {
-        result.push_back(numAlpha[i]);
+    else {
+        h = s.size() / w.k;
     }
-    result = codec.to_bytes(ws);
-    return result;
-}
-inline string modAlphaCipher::getValidKey(const string& s)
-{
-    string result;
-    wstring ws = codec.from_bytes(s);
-    if (ws.empty())
-        throw cipher_error("Empty key");
-
-    wstring tmp(ws);
-    for (auto& c : tmp) {
-        if (!isalpha(c, loc))
-            throw cipher_error(std::string("Invalid key ") + s);
-        if (islower(c, loc))
-            (c >= L'à' && c <= L'ÿ');
-        c = toupper(c, loc);
+    wchar_t a[h][w.k];
+    int k = 0;
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w.k; j++) {
+            if (k < s.size()) {
+                a[i][j] = s[k];
+                k++;
+            }
+            else a[i][j] = ' ';
+        }
     }
-    result = codec.to_bytes(tmp);
-    return result;
+    for (int i = 0; i < w.k; i++) {
+        for (int j = 0; j < h; j++) {
+            code += a[j][i];
+        }
+    }
+    return code;
 }
-inline std::string modAlphaCipher::getValidOpenText(const std::string& s)
+wstring PerestanCipher::DecoderPerestanCipher(PerestanCipher w, wstring& s)
 {
-
-    std::string result;
+    s = getValidOpenText(s);
+    w = getValidKey(w.k, s);
+    int h;
+    if (s.size() % w.k != 0) {
+        h = s.size() / w.k + 1;
+    }
+    else {
+        h = s.size() / w.k;
+    }
+    wchar_t a[h][w.k];
+    int k = 0;
+    for (int i = 0; i < w.k; i++) {
+        for (int j = 0; j < h; j++) {
+            a[j][i] = s[k];
+            k++;
+        }
+    }
+    wstring decode;
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w.k; j++) {
+            decode += a[i][j];
+        }
+    }
+    return decode;
+}
+inline int PerestanCipher::getValidKey(const int k, const std::wstring& s)
+{
+    if (k <= 0)
+        throw cipher_error("Wrong key");
+    else if (k > (s.size() / 2))
+        throw cipher_error("The key is longer than the text length");
+    else
+        return k;
+}
+inline std::wstring PerestanCipher::getValidOpenText(const std::wstring& s)
+{
     std::wstring tmp;
-    std::wstring ws = codec.from_bytes(s);
-    for (auto c : ws) {
-        if (isalpha(c, loc)) {
-            if (islower(c, loc))
-                tmp.push_back(toupper(c, loc));
-            else tmp.push_back(c);
+    for (auto c : s) {
+        if (isalpha(c)) {
+            if (islower(c)) {
+                tmp.push_back(toupper(c));
+            }
+            else
+                tmp.push_back(c);
         }
     }
     if (tmp.empty())
-        throw cipher_error("Empty open text");
-    result = codec.to_bytes(tmp);
-    return result;
+        throw cipher_error("The input text is missing");
+    return tmp;
 }
-inline std::string modAlphaCipher::getValidCipherText(const std::string& s)
-{
 
-    std::string result;
-    std::wstring ws = codec.from_bytes(s);
-    if (ws.empty())
-        throw cipher_error("Empty cipher text");
-    for (auto c : ws) {
-        if (!isupper(c, loc))
-            throw cipher_error(std::string("Invalid cipher text ") + s);
+inline std::wstring PerestanCipher::getValidCipherText(const std::wstring& s)
+{
+    std::wstring tmp;
+    for (auto c : s) {
+        if (isalpha(c)) {
+            if (islower(c)) {
+                tmp.push_back(toupper(c));
+            }
+            else
+                tmp.push_back(c);
+        }
     }
-    result = codec.to_bytes(ws);
-    return result;
+    if (tmp.empty())
+        throw cipher_error("The output text is missing");
+    return tmp;
 }

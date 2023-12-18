@@ -1,98 +1,87 @@
-#include <iostream>
-#include <string>
 #include <UnitTest++/UnitTest++.h>
-#include "modAlphaCipher.h"
+#include <iostream>
+#include "modRoutingCipher.h"
+#include <locale>
+#include <codecvt>
+
+
+using namespace std;
+string wst(int k, wstring s1)
+{
+    PerestanCipher w(k);
+    wstring s = w.CoderPerestanCipher(w, s1);
+    const string s2(s.begin(), s.end());
+    return s2;
+}
+string wst1(int k, wstring s1)
+{
+    PerestanCipher w(k);
+    wstring s = w.DecoderPerestanCipher(k, s1);
+    const string s2(s.begin(), s.end());
+    return s2;
+}
 SUITE(KeyTest)
 {
+    wstring test = L"PROGRAMMIROVANIE";
+    int k;
     TEST(ValidKey) {
-        CHECK_EQUAL("LLEHO", modAlphaCipher("4").encrypt("HELLO"));
+        CHECK_EQUAL(wst(k = 4, test), "PRIARARNOMOIGMVE");
     }
-    TEST(LetterInKey) {
-        CHECK_THROW(modAlphaCipher cp("Á1"), cipher_error);
+    TEST(NegativeKey) {
+        CHECK_THROW(wst(k = -5, test), cipher_error);
     }
-    TEST(PunctuationInKey) {
-        CHECK_THROW(modAlphaCipher cp("1,1"), cipher_error);
-    }
-    TEST(WhitespaceInKey) {
-        CHECK_THROW(modAlphaCipher cp("1 2"), cipher_error);
-    }
-    TEST(EmptyKey) {
-        CHECK_THROW(modAlphaCipher cp(""), cipher_error);
-    }
-    TEST(WeakKey) {
-        CHECK_THROW(modAlphaCipher cp("1"), cipher_error);
+    TEST(A_characters_in_the_key_instead_of_numbers) {
+        CHECK_THROW(wst(k = -6, test), cipher_error);
     }
 }
-
-struct KeyB_fixture {
-    modAlphaCipher* p;
-    KeyB_fixture()
-    {
-        p = new modAlphaCipher("4");
-    }
-    ~KeyB_fixture()
-    {
-        delete p;
-    }
-};
-
 SUITE(EncryptTest)
 {
-    TEST_FIXTURE(KeyB_fixture, UpCaseString) {
-        CHECK_EQUAL("LRLOEWDHOL",
-            p->encrypt("HELLOWORLD"));
+    TEST(ValidText) {
+        CHECK_EQUAL(wst(4, L"PROGRAMMIROVANIE"), "PRIARARNOMOIGMVE");
     }
-    TEST_FIXTURE(KeyB_fixture, LowCaseString) {
-        CHECK_EQUAL("LRLOEWDHOL",
-            p->encrypt("helloworld"));
+    TEST(LowText) {
+        CHECK_EQUAL(wst(4, L"PRograMmiroVANie"), "PRIARARNOMOIGMVE");
     }
-    TEST_FIXTURE(KeyB_fixture, StringWithWhitspaceAndPunct) {
-        CHECK_EQUAL("LRLOEWDHOL",
-            p->encrypt("HELLO WORLD!!!"));
+    TEST(SpaceText) {
+        CHECK_EQUAL(wst(4, L"PROGRAM MIROVANIE"), "PRIARARNOMOIGMVE");
     }
-    TEST_FIXTURE(KeyB_fixture, StringWithNumbers) {
-        CHECK_EQUAL("LRLOEWDHOL", p->encrypt("HELLO 2023 WORLD"));
+    TEST(EmptyText) {
+        CHECK_THROW(wst(4, L" "), cipher_error);
     }
-    TEST_FIXTURE(KeyB_fixture, EmptyString) {
-        CHECK_THROW(p->encrypt(""), cipher_error);
+    TEST(ValiDTextWithoutletters) {
+        CHECK_THROW(wst(4, L"!*><?/,.123"), cipher_error);
     }
-    TEST_FIXTURE(KeyB_fixture, NoAlphaString) {
-        CHECK_THROW(p->encrypt("1234+8765=9999"), cipher_error);
+    TEST(TextWithNumber) {
+        CHECK_EQUAL(wst(4, L"PRograM123miroVANie"), "PRIARARNOMOIGMVE");
     }
-    TEST(MaxShiftKey) {
-        CHECK_EQUAL("DLROWOLLEH",
-            modAlphaCipher("10").encrypt("HELLOWORLD"));
+    TEST(TextWithSpaceAndPunct) {
+        CHECK_EQUAL(wst(6, L"The programmer walks!"), "TGRHRWEAAPMLRMKOES");
     }
 }
-
 SUITE(DecryptText)
 {
-    TEST_FIXTURE(KeyB_fixture, UpCaseString) {
-        CHECK_EQUAL("HELLOWORLD",
-            p->decrypt("LRLOEWDHOL"));
+    TEST(ValidTEXT) {
+        CHECK_EQUAL(wst1(4, L"PRIARARNOMOIGMVE"), "PROGRAMMIROVANIE");
     }
-    TEST_FIXTURE(KeyB_fixture, LowCaseString) {
-        CHECK_THROW(p->decrypt("lrloeWDHOL"), cipher_error);
+    TEST(LowTEXT) {
+        CHECK_EQUAL(wst1(4, L"PriaRARNomoIGMve"), "PROGRAMMIROVANIE");
     }
-    TEST_FIXTURE(KeyB_fixture, WhitespaceString) {
-        CHECK_THROW(p->decrypt("LRLOE WDHOL"), cipher_error);
+    TEST(SpaceTEXT) {
+        CHECK_EQUAL(wst1(4, L"PRIARARN OMOIGMVE"), "PROGRAMMIROVANIE");
     }
-    TEST_FIXTURE(KeyB_fixture, DigitsString) {
-        CHECK_THROW(p->decrypt("LRLOE2021WDHOL"), cipher_error);
+    TEST(EmptyTEXT) {
+        CHECK_THROW(wst1(4, L" "), cipher_error);
     }
-    TEST_FIXTURE(KeyB_fixture, PunctString) {
-        CHECK_THROW(p->decrypt("LRLOE,WDHOL"), cipher_error);
+    TEST(TextNumberText) {
+        CHECK_EQUAL(wst1(4, L"PRIARARN123OMOIGMVE"), "PROGRAMMIROVANIE");
     }
-    TEST_FIXTURE(KeyB_fixture, EmptyString) {
-        CHECK_THROW(p->decrypt(""), cipher_error);
+    TEST(TextSymbolText) {
+        CHECK_EQUAL(wst1(4, L"PRIARARN!!!OMOIGMVE"), "PROGRAMMIROVANIE");
     }
-    TEST(MaxShiftKey) {
-        CHECK_EQUAL("HELLOWORLD",
-            modAlphaCipher("10").decrypt("DLROWOLLEH"));
-    }
+
 }
 
-int main(int argc, char** argv)
+int main()
 {
     return UnitTest::RunAllTests();
 }
